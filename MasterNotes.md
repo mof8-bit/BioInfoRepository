@@ -1,4 +1,4 @@
-/Get data
+/ Get data
 
 Go to home directory. Load anaconda module. Install SRA-tools through an environment: 
 $ module load anaconda3 --  load anaconda module
