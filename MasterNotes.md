@@ -68,3 +68,77 @@ MINLEN:75 \
 
 $ info about surviving reads: 
 $ anything noteworthy/quality: 
+
+3/17 --> assembling contigs
+
+3/19 --> virsorter
+ensure contigs are in megahit folder
+create virosorter and votu folders
+Install virosorter:
+
+$ module load mamba
+$ mamba create -y -n vs2-env -c conda-forge -c bioconda virsorter
+$ rm -rf /home/mof8/group_proj/db/conda_envs
+$ rm -rf /home/mof8/group_proj/db/.snakemake
+$ virsorter setup -d /home/mof8/group_proj/db -j 4 --conda-frontend conda
+
+Make slurm script (scripts folder) and submit. 
+Script: #!/bin/bash
+#SBATCH --job-name=virsorter
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=8                 
+#SBATCH --mem=20G                         
+#SBATCH --time=03:00:00     
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=mof8@georgetown.edu              
+#SBATCH --output=/home/mof8/group_proj/logs/virsorter.%j.out
+#SBATCH --error=/home/mof8/group_proj/logs/virsorter.%j.err
+
+# ==== Load mamba (students: no need to change) ====
+module load mamba
+source $(mamba info --base)/etc/profile.d/conda.sh
+
+# Activate the environment where you had VirSorter2 installed
+mamba activate vs2-env
+
+# ==== Set paths and filenames (students: edit this block!) ====
+#set up directories
+INDIR=/home/mof8/group_proj/megahit      #directory where input will come from
+OUTROOT=/home/mof8/group_proj/virsorter  #directory output will go
+mkdir -p "${OUTROOT}"                                    #new directory to be created for outp$
+
+SAMPLE_ID= final_contigs                                                 #just the basic sampl$
+INPUT="${INDIR}/final.contigs.fa"                        #contig file name/location
+OUTDIR="${OUTROOT}/vs2-${SAMPLE_ID}"                     #where you’ll find the outputs
+mkdir -p "${OUTDIR}"
+
+
+# ==== Run virsorter2 with >5kb cutoff and DNA virus categories first
+echo "Running VirSorter2 on ${INPUT}"
+virsorter run \
+  -w "${OUTDIR}" \
+  -i "${INPUT}" \
+  --keep-original-seq \
+  --include-groups dsDNAphage,NCLDV,ssDNA \
+  --min-length 5000
+
+echo "Done."
+
+Find your results (in virsorter folder!)
+Filter out anything smaller than 5 kb:
+
+$ module load mamba/
+$ mamba activate megahit-env  
+
+Count contigs:
+
+$ seqkit seq -m 5000 final-viral-combined.fa | grep -c “>”
+$ seqkit seq -m 5000 final-viral-combined.fa > final-viral-combined_min5kb.fa
+
+Cluster vOTUs:
+
+vclust prefilter -i megahit/final.contigs.fa -o fltr.txt
+vclust align -i final-viral-combined_min5kb.fa -o ani.tsv --filter fltr.txt
+vclust cluster -i ani.tsv -o clusters.tsv --ids ani.ids.tsv --metric ani --ani 0.95 —-out-repr
+vclust prefilter -i final-viral-combined_min5kb.fa -o fltr.txt
+
