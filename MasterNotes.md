@@ -142,3 +142,9 @@ vclust align -i final-viral-combined_min5kb.fa -o ani.tsv --filter fltr.txt
 vclust cluster -i ani.tsv -o clusters.tsv --ids ani.ids.tsv --metric ani --ani 0.95 —-out-repr
 vclust prefilter -i final-viral-combined_min5kb.fa -o fltr.txt
 
+Mar 24
+Set up checkv in newly made checkv folder
+module load checkv						#its available as a module on the HPC
+checkv download_database ./				#make sure you’re in your checkv folder!
+make slurm script
+look at quality_summary_votus.tsv: We noticed that most of the vOTUs were lower quality. In fact, at first glance we cannot see any that are not lower quality. 
