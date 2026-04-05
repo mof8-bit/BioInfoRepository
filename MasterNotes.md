@@ -1,26 +1,45 @@
-Get data
+# Metagenome Project: Maeve & Salvatore
+### notes to self: include overall goal of project up here? also include what folders we created. 
 
-Go to home directory. Load anaconda module. Install SRA-tools through an environment: 
-$ module load anaconda3 --  load anaconda module
+## Class 15: Intro to GitHub and Installing R
+1. Create group GitHub repository with ReadMe file to keep track of our workflow (makes it reproducible)
+2. Install R and RStudio (for analysis at the end of the project)
 
-$ conda create -n sra_env -c bioconda sra-tools -- create SRA tools enviornment 
-→ say yes
+## Class 16: Get Organized, Download Sample Data, and Start Workflow
+1. Get data --> sample 7: bog frozen replicate. SAMN08784154.
+2. Go to home directory 
+3. Load anaconda module on the HPC so we can use conda
+```bash
+module load anaconda3
+```
+4. Create a conda enviornment and install the STA Toolkit in it 
 
-$ conda init -- initiate anaconda -- initialize conda and reload shell
-$ source ~/.bashrc -- reload shell
+```bash
+conda create -n sra_env -c bioconda sra-tools 
+# say yes
+```
+5. Activate the environment so SRA Toolkit commands will work
+```bash
+conda activate sra_env
+```
+6. Make and enter fastqc_raw directory (folder where you want your sequencing files downloaded)  
+```bash
+mkdir fastqc_raw
+cd /home/mof8/group_proj/fastqc_raw
+```
+7. Download sequencing data from NCBI SRA
+```bash
+prefetch [SAMN08784154]
+```
+8. Convert .sra file into FASTQ format
+```bash
+fasterq-dump *.sra
+``` 
+9. Compress FASTQ file
+```bash
+gzip *.fastq
+``` 
 
-$ conda activate sra_env -- activate enviornment
-
-$ cd /home/mof8/group_proj/fastqc_raw
-
-$ prefetch [SAMN08784154] -- downloaded sequencing data from SRA
-
-$ mkdir fastqc_raw -- make directory for the raw fastqc data 
-$ cd fastqc_raw -- move to that directory 
-
-$ fasterq-dump *.sra -- convert SRA file into FASTQ
-
-$ gzip *.fastq -- compress fastq files
 get organized -- name 
 
 Fastqc
