@@ -415,3 +415,5 @@ sbatch bowtie2.sbatch
 gcloud storage cp sample4_mof8_sorted.bam gs://gu-biology-dept-class/ClassProject/bam
 ```
 you forgot to rename this sample4_mof8... that made it hard to identify which sample you added to bucket! (maeve) 
+
+## Class 20: 
