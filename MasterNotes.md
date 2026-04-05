@@ -330,9 +330,88 @@ vclust align -i final-viral-combined_min5kb.fa -o ani.tsv --filter fltr.txt
 vclust cluster -i ani.tsv -o clusters.tsv --ids ani.ids.tsv --metric ani --ani 0.95 —-out-repr
 vclust prefilter -i final-viral-combined_min5kb.fa -o fltr.txt
 
-Mar 24
-Set up checkv in newly made checkv folder
-module load checkv						#its available as a module on the HPC
-checkv download_database ./				#make sure you’re in your checkv folder!
-make slurm script
-look at quality_summary_votus.tsv: We noticed that most of the vOTUs were lower quality. In fact, at first glance we cannot see any that are not lower quality. 
+## Class 19: CheckV and Alignment to vOTUs
+
+### Goal
+The goal of this class was to evaluate the quality of our viral sequences using **CheckV**, then prepare for analysis by aligning our cleaned reads to the class **vOTUs** reference with **Bowtie2** and **Samtools**. 
+
+### Step 1: Set up CheckV
+
+CheckV is used after VirSorter2 and clustering because viral contigs can still be partial or contaminated with host DNA. CheckV estimates completeness, identifies host contamination, trims host-derived regions, and assigns quality categories such as complete, high, medium, low, or undetermined. 
+
+Before running CheckV, we made sure we had:
+1. Our vOTU FASTA file
+2. Its full path
+3. A `checkv` directory for the database and output files
+
+Download checkv in checkv folder
+
+```bash
+module load checkv # its available as a module on the HPC
+checkv download_database ./ # make sure you’re in your checkv folder!
+```
+### Step 2: Write and Submit SLURM script for CheckV 
+1. Write SLURM script
+```bash
+#!/bin/bash
+#SBATCH --job-name=checkv
+#SBATCH --output=/home/mof8/group_proj/logs/checkv-%j.out
+#SBATCH --error=/home/mof8/group_proj/logs/checkv-%j.err
+#SBATCH --time=03:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=16G
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=mof8@georgetown.edu
+
+# ==== Load checkv module ====
+module load checkv
+
+# ==== Set variables, paths, and filenames ====
+CHECKVDB="/home/mof8/group_proj/checkv/checkv-db-v1.5"
+SAMPLE_ID="vOTUs"
+INPUT="/home/mof8/group_proj/votus/votus_10kb_6samples.fna"
+OUTDIR="/home/mof8/group_proj/checkv/${SAMPLE_ID}"
+
+mkdir -p "${OUTDIR}"
+
+# ==== Run CheckV ====
+echo "Running CheckV on ${INPUT}"
+checkv end_to_end "${INPUT}" "${OUTDIR}" -d "${CHECKVDB}" -t ${SLURM_CPUS_PER_TASK}
+echo "Done."
+```
+2. Submit using
+```bash
+sbatch checkv.sbatch
+```
+### Step 3: Find and Interpret results
+1. Look at output files-- the main one is quality_summary.tsv
+2. Inspect output
+```bash
+cd /home/mof8/group_proj/checkv/vOTUs
+ls
+head quality_summary.tsv
+```   
+### Step 4: Download the pooled class vOTUs
+```bash
+gcloud storage cp gs://gu-biology-dept-class/ClassProject/votus_10kb_6samples.fna /home/mof8/group_proj/bowtie2/
+```
+### Step 5: Set up Bowtie2 directory and build the index
+```bash
+srun --pty bash # starts an interactive compute session
+module load bowtie2 # loads bowtie2
+bowtie2-build votus_10kb_6samples.fna votu_index # creates the bowtie2 index files from the pooled vOTUs FASTA
+exit
+```
+### *** revisit my scripts for these *** Step 6: Write and Submit a Bowtie2 and Samtools SLURM script
+1. Scripts
+2. Submit the job
+```bash
+sbatch bowtie2.sbatch
+```
+### Step 7: Upload final Bowtie2 output files to class bucket 
+```bash
+gcloud storage cp sample4_mof8_sorted.bam gs://gu-biology-dept-class/ClassProject/bam
+```
+you forgot to rename this sample4_mof8... that made it hard to identify which sample you added to bucket! (maeve) 
