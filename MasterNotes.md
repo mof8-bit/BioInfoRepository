@@ -6,6 +6,7 @@
 2. Install R and RStudio (for analysis at the end of the project)
 
 ## Class 16: Get Organized, Download Sample Data, and Start Workflow
+### Step 1: Download your FASTQ files
 1. Get data --> sample 7: bog frozen replicate. SAMN08784154.
 2. Go to home directory 
 3. Load anaconda module on the HPC so we can use conda
@@ -38,25 +39,53 @@ fasterq-dump *.sra
 9. Compress FASTQ file
 ```bash
 gzip *.fastq
-``` 
+```
+10. Fastqc files to focus on: SRR37587572_1.fastq SRR37587572_2.fastq --> we got a lot of files and chose these two to focus on
 
-get organized -- name 
+### Step 2: FASTQC of Raw Reads
 
-Fastqc
+1. Enter interactive mode on a compute node
+```bash
+srun --pty bash
+```
+2. Confirm the prompt changes to make sure your commandd line knows you are on the compute node
+3. Load the FastQC software so you can use the fastqc command
+```bash
+module load fastqc
+```
+4. Show the help menu for FastQC to confirm that it loaded correctly and to see available options
+```bash
+fastqc -h
+```
+5. Make a folder called fastqc_out for the FastQC results
+```bash
+mkdir -p fastqc_out
+```
+6. Run FastQC on paired end reads
+```bash
+fastqc -o fastqc_out SRR37587572_1.fastq SRR37587572_2.fastq
+```
+fastqc is the program
+-o fastqc_out puts the output files into the fastqc_out folder
+SRR37587572_1.fastq SRR37587572_2.fastq are the established files of interest
 
-Fastqc files to focus on: SRR37587572_1.fastq SRR37587572_2.fastq
+7. List the files inside the output folder so you can confirm that FastQC finished and created resutls
+```bash
+ls fastqc_out
+```
+We should see files like SRR37587572_1.fastqc.html and .zip
+.html -- the report you open and read
+.zip thes same results in a compressed folder
 
-$ srun --pty bash -- enter interactive mode on a compute node 
-$ module load fastqc -- load FastQC
-$ fastqc -h -- confirm FastQC is available
-$ fastqc -o fastqc_out SRR37587572_1.fastq SRR37587572_2.fastq -- run fastq
-$ fastqc -o fastqc_out sample_R1.fastq.gz sample_R2.fastq.gz -- example with two paired-end files
-$ ls fastqc_out -- still on the compute node -- we should see files like SRR37587572_1.fastqc.html 
+8. Download the .html report to your computer
 
-Trimmomatic
-
-$ SLURM script: 
-
+### Step 3: Trimmomatic and FastQC of Trimmed
+1. Load trimmommatic
+```bash
+module load trimmomatic
+```
+2. Run paired-end trimming using this slurm script: 
+```bash
 #!/bin/bash
 #SBATCH --job-name=projecttrims.SBATCH --output=z01.%x
 #SBATCH --mail-type=END,FAIL --mail-user=sja111@georgetown.edu
@@ -85,12 +114,116 @@ ILLUMINACLIP:$adapters:2:30:10 \
 SLIDINGWINDOW:4:15 \
 MINLEN:75 \
 
-$ info about surviving reads: 
-$ anything noteworthy/quality: 
+## *** we need to insert the trimming statistics here ***
 
-3/17 --> assembling contigs
+3. FastQC of trimmed reads
+```bash
+fastqc -o projectfastqc_out \
+trimmed/SRR37587572_1_paired.fastq.gz \
+trimmed/SRR37587572_2_paired.fastq.gz
+```
+## *** we evaluation of trimmed output files here ***
 
+## Class 17: Assembly of Contigs
+
+### Goal
+The goal of this step was to assemble our cleaned paired-end sequencing reads into longer contiguous sequences, called **contigs**, using **MEGAHIT**. This is important because downstream viral analysis tools work on assembled contigs rather than short raw reads.
+
+---
+
+### Step 1: Get organized
+
+Before running assembly, we made sure that:
+
+1. Our reads had already been cleaned using **FastQC** and **Trimmomatic**
+2. Our cleaned files were paired-end reads with clear names
+3. We knew the full path to the cleaned read files
+4. We had an output directory ready for the MEGAHIT results
+
+Example cleaned read files:
+
+```bash
+SRR37587572_1_paired.fastq.gz
+SRR37587572_2_paired.fastq.gz
+```
+### Step 2: Install MEGAHIT 
+We used mamba to create an enviornment containing MEGAHIT. It assembles short sequencing reads into longer contigs by finding overlaps between reads. This gives us larger sequences that are much more useful for downstream viral identification. 
+
+```bash
+module load mamba/
+mamba create -y -n megahit-env -c conda-forge -c bioconda megahit
+```
+module load mamba/ --> loads mamba onto the HPC
+mamba create -->  creates a new enviornment
+-y --> automatically says yes to installation promps
+-n megahit-env names the enviornment megahit-env
+-c conda-forge -c bioconda --> tels mamba which channels to install from
+megahit --> is the software package being installed
+
+### Step 3: Write SLURM script to run MEGAHIT
+
+1. Use this slurm script
+```bash
+#!/bin/bash
+#SBATCH --job-name=megahit_sample
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32G
+#SBATCH --time=03:00:00
+#SBATCH --output=/home/mof8/group_proj/logs/megahit_%j.out
+#SBATCH --error=/home/mof8/group_proj/logs/megahit_%j.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=YOUR_EMAIL@georgetown.edu
+
+module load mamba/
+source $(mamba info --base)/etc/profile.d/conda.sh
+conda activate megahit-env
+
+READ1=/home/mof8/group_proj/trimmed/SRR37587572_1_paired.fastq.gz
+READ2=/home/mof8/group_proj/trimmed/SRR37587572_2_paired.fastq.gz
+OUTDIR=/home/mof8/group_proj/megahit/SRR37587572_megahit_out
+
+megahit \
+  -1 ${READ1} \
+  -2 ${READ2} \
+  -t ${SLURM_CPUS_PER_TASK} \
+  -o ${OUTDIR}
+
+echo "Done. Contigs should be in ${OUTDIR}/final.contigs.fa"
+```
+2. Submit job using
+```bash
+sbatch megahit.sbatch
+```
+### Step 4: Find the Results
+1. Navigate to output directory after job is finished and look at assembly results
+-- most important file is final.contigs.fa
+2. Inspect the output using
+```bash
+cd /home/mof8/group_proj/megahit/SRR37587572_megahit_out
+ls
+head final.contigs.fa
+grep -c "^>" final.contigs.fa
+```
+## *** what did we see? ***
+
+### Step 5: Check Assembly Quality with seqkit 
+1. Install seqkit
+```bash
+module load mamba/
+source $(mamba info --base)/etc/profile.d/conda.sh
+conda activate megahit-env
+mamba install -c bioconda seqkit
+```
+2. Find assembly statistics like number of contigs, total length of contigs, min/max/avg contig length, and N50
+```bash
+seqkit stats -a final.contigs.fa
+```
+## *paste seqkit output here*
+
+## Class 18
 3/19 --> virsorter
+
 ensure contigs are in megahit folder
 create virosorter and votu folders
 Install virosorter:
