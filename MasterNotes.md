@@ -221,20 +221,51 @@ seqkit stats -a final.contigs.fa
 ```
 ## *paste seqkit output here*
 
-## Class 18
-3/19 --> virsorter
+## Class 18: VirSorter2 and Clustering into vOTUs
 
-ensure contigs are in megahit folder
-create virosorter and votu folders
-Install virosorter:
+### Goal
+The goal of this class was to identify likely viral contigs from our assembled metagenome and then begin clustering those viral contigs into **vOTUs** (viral operational taxonomic units). We first used **VirSorter2** to predict which contigs were viral, then filtered those viral contigs by length, and finally used **vclust** to cluster similar viral sequences based on average nucleotide identity (ANI).
 
-$ module load mamba
-$ mamba create -y -n vs2-env -c conda-forge -c bioconda virsorter
-$ rm -rf /home/mof8/group_proj/db/conda_envs
-$ rm -rf /home/mof8/group_proj/db/.snakemake
-$ virsorter setup -d /home/mof8/group_proj/db -j 4 --conda-frontend conda
+### Step 1: Get organized
 
-Make slurm script (scripts folder) and submit. 
+Before starting VirSorter2, we made sure that:
+
+1. The correct contig file from the MEGAHIT assembly was in the megahit output folder
+2. I knew the full path to the contig file
+3. I had directories prepared for the VirSorter2 output and later vOTU clustering output
+
+The  input file for this step was the assembled contig file from MEGAHIT:
+
+```bash
+/home/mof8/group_proj/megahit/final.contigs.fa
+```
+### Step 2: Install VirSorter2
+```bash
+module load mamba
+mamba create -y -n vs2-env -c conda-forge -c bioconda virsorter
+```
+module load mamba --> load mamba onto hpc
+mamba create --> creates a new enviornment
+-y --> automatically says yes to installation prompts
+-n vs2-env --> names the enviornment vs2-env
+-c conda-forge -c bioconda --> tells mamba where to install the package from
+virsorter is the package being installed
+
+### Step 3: Download the VirSorter2 databases
+```bash
+module load mamba 
+source $(mamba info --base)/etc/profile.d/conda.sh
+mamba activate vs2-env # activates VirSorter2 enviornment
+
+rm -rf /home/mof8/group_proj/db/conda_envs # removes a failed conda_envs directory from previous attempt
+rm -rf /home/mof8/group_proj/db/.snakemake # removes failed snakemake directory from a previous attempt
+
+virsorter setup -d /home/mof8/group_proj/db -j 4 --conda-frontend conda # downloads and prepares the virsorter2 databases
+
+```
+### Step 4: Write and Submit a SLURM Script for VirSorter2
+1. Write script
+```bash
 Script: #!/bin/bash
 #SBATCH --job-name=virsorter
 #SBATCH --nodes=1
@@ -245,7 +276,12 @@ Script: #!/bin/bash
 #SBATCH --mail-user=mof8@georgetown.edu              
 #SBATCH --output=/home/mof8/group_proj/logs/virsorter.%j.out
 #SBATCH --error=/home/mof8/group_proj/logs/virsorter.%j.err
-
+```
+2. Submit
+```bash
+sbatch virsorter.sbatch
+```
+### Alernative Directions? (pasted in by prof)
 # ==== Load mamba (students: no need to change) ====
 module load mamba
 source $(mamba info --base)/etc/profile.d/conda.sh
