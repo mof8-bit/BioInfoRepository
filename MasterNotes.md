@@ -1,5 +1,5 @@
 # Metagenome Project: Maeve & Salvatore
-### notes to self: include overall goal of project up here? also include what folders we created. 
+**notes to self: include overall goal of project up here? also include what folders we created.** 
 
 ## Class 15: Intro to GitHub and Installing R
 1. Create group GitHub repository with ReadMe file to keep track of our workflow (makes it reproducible)
@@ -122,7 +122,7 @@ fastqc -o projectfastqc_out \
 trimmed/SRR37587572_1_paired.fastq.gz \
 trimmed/SRR37587572_2_paired.fastq.gz
 ```
-## *** we evaluation of trimmed output files here ***
+**evaluation of trimmed output files here** 
 
 ## Class 17: Assembly of Contigs
 
@@ -205,7 +205,7 @@ ls
 head final.contigs.fa
 grep -c "^>" final.contigs.fa
 ```
-## *** what did we see? ***
+**what did we see?**
 
 ### Step 5: Check Assembly Quality with seqkit 
 1. Install seqkit
@@ -219,7 +219,7 @@ mamba install -c bioconda seqkit
 ```bash
 seqkit stats -a final.contigs.fa
 ```
-## *paste seqkit output here*
+**paste seqkit output here**
 
 ## Class 18: VirSorter2 and Clustering into vOTUs
 
@@ -414,6 +414,19 @@ sbatch bowtie2.sbatch
 ```bash
 gcloud storage cp sample4_mof8_sorted.bam gs://gu-biology-dept-class/ClassProject/bam
 ```
-you forgot to rename this sample4_mof8... that made it hard to identify which sample you added to bucket! (maeve) 
+**you forgot to rename this sample4_mof8... that made it hard to identify which sample you added to bucket! (maeve)** 
 
-## Class 20: 
+## Class 20: Make Figures to Look at Ecology
+Review: 
+1. We built an index of the reference genome using bowtie-build-- this lets Bowtie2 quickly find candidate locations in the genome where a short read could align without scanning the genome linearly for every read
+2. We aligned out FASTQ reads to the index with bowtie2, which searches for where in the referecne genome each read fits best while allowing small indels/mismatches and write alignments to a SAM file
+3. We converted the SAM file to a BAM file which is easier to process
+4. She took our sorted.bam files and used CoverM to calculate how many reads mapped and how well it is covered for each vOTU
+
+Today:
+1. Download RStudio
+2. Make a local working directory on your computer
+3. Download .tsv and .R files from bucket /ClassProject/
+4. Make either heatmap of abundance or richness tables
+
+**what do we see**? 
