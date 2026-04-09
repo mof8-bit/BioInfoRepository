@@ -305,6 +305,8 @@ virsorter run \
 
 echo "Done."
 ```
+Note that dori_luby_final.contigs.fa is a file from another group. These were used because our contigs were of insufficient length.
+
 2. Submit
 ```bash
 sbatch virsorter.sbatch
