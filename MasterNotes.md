@@ -273,9 +273,37 @@ Script: #!/bin/bash
 #SBATCH --mem=20G                         
 #SBATCH --time=03:00:00     
 #SBATCH --mail-type=END,FAIL
-#SBATCH --mail-user=mof8@georgetown.edu              
-#SBATCH --output=/home/mof8/group_proj/logs/virsorter.%j.out
-#SBATCH --error=/home/mof8/group_proj/logs/virsorter.%j.err
+#SBATCH --mail-user=sja111@georgetown.edu              
+#SBATCH --output=/home/sja111/Bioinfo_project/Virsorter/logs/virsorter.%j.out
+#SBATCH --error=/home/sja111/Bioinfo_project/Virsorter/logs/virsorter.%j.err
+
+# ==== Load mamba (students: no need to change) ====
+module load mamba
+
+# Activate the environment where you had VirSorter2 installed
+mamba activate vs2-env
+
+# ==== Set paths and filenames (students: edit this block!) ====
+#set up directories
+INDIR=/home/sja111/Bioinfo_project/Virsorter/input
+OUTROOT=/home/sja111/Bioinfo_project/Virsorter
+mkdir -p "${OUTROOT}"
+
+SAMPLE_ID=VirsortSample
+INPUT="${INDIR}/dori_luby_final.contigs.fa"
+OUTDIR="${OUTROOT}/vs2-${SAMPLE_ID}"
+mkdir -p "${OUTDIR}"
+
+# ==== Run virsorter2 with >5kb cutoff and DNA virus categories first
+echo "Running VirSorter2 on ${INPUT}"
+virsorter run \
+  -w "${OUTDIR}" \
+  -i "${INPUT}" \
+  --keep-original-seq \
+  --include-groups dsDNAphage,NCLDV,ssDNA \
+  --min-length 5000
+
+echo "Done."
 ```
 2. Submit
 ```bash
